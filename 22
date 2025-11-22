@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>油藏物质平衡能量计算 - 水侵量计算</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--gray-100);
+            min-height: 100vh;
+            color: var(--gray-800);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .logo-subtitle {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-header-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .card-header-icon.primary {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+
+        .card-header-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .card-header-icon.accent {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent);
+        }
+
+        .card-header-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Formula Display */
+        .formula-box {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--gray-700);
+            overflow-x: auto;
+        }
+
+        /* Parameter Grid */
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .param-label .symbol {
+            font-family: 'Cambria Math', serif;
+            font-style: italic;
+            color: var(--primary);
+        }
+
+        .param-input {
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--gray-800);
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .param-input:hover {
+            border-color: var(--gray-400);
+        }
+
+        .param-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .param-unit {
+            font-size: 11px;
+            color: var(--gray-400);
+            margin-top: 4px;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--gray-200);
+            margin: 20px 0;
+        }
+
+        .divider-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-400);
+            margin-bottom: 16px;
+        }
+
+        /* Textarea */
+        .data-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--gray-700);
+            background: var(--gray-50);
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+
+        .data-textarea:hover {
+            border-color: var(--gray-400);
+        }
+
+        .data-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: white;
+        }
+
+        .data-textarea::placeholder {
+            color: var(--gray-400);
+        }
+
+        /* Info Text */
+        .info-text {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .info-text svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .message-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #b91c1c;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Table */
+        .table-container {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .data-table th {
+            background: var(--gray-50);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .data-table tr:hover td {
+            background: var(--gray-50);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Energy Cards */
+        .energy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .energy-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .energy-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .energy-card .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 14px;
+        }
+
+        .energy-card .label {
+            font-size: 11px;
+            color: var(--gray-500);
+            margin-bottom: 4px;
+        }
+
+        .energy-card .value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .energy-card.highlight {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border: none;
+        }
+
+        .energy-card.highlight .label,
+        .energy-card.highlight .value {
+            color: white;
+        }
+
+        .energy-card.highlight .icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* Chart Grid */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            height: 280px;
+            position: relative;
+        }
+
+        @media (max-width: 1024px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Collapsible Section */
+        .collapsible {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            padding: 16px 20px;
+            background: var(--gray-50);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s ease;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            background: var(--gray-100);
+        }
+
+        .collapsible-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .collapsible-icon {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+            color: var(--gray-500);
+        }
+
+        .collapsible.open .collapsible-icon {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible.open .collapsible-content {
+            max-height: 100000px;
+        }
+
+        .collapsible-body {
+            padding: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        /* 嵌套的时步折叠项 */
+        .collapsible-body .collapsible .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .collapsible-body .collapsible.open .collapsible-content {
+            max-height: 100000px;
+        }
+
+        /* Calculation Detail */
+        .calc-step {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .calc-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .calc-step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .calc-step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .calc-step-date {
+            font-size: 12px;
+            color: var(--gray-500);
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .calc-formula {
+            margin-bottom: 8px;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .calc-formula-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .calc-formula-eq {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 12px;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+            line-height: 1.6;
+        }
+
+        .calc-formula-values {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 11px;
+            color: var(--gray-600);
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .calc-formula-result {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .calc-formula-result.negative {
+            color: var(--danger);
+        }
+
+        /* Two Column Layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .param-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">E</div>
+                <div>
+                    <div class="logo-text">油藏能量计算</div>
+                    <div class="logo-subtitle">Material Balance Energy Calculator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 基础参数 -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <div class="card-header-icon primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="card-title">基础参数配置</div>
+                    <div class="card-subtitle">设置油藏物性参数和初始条件</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="formula-box">
+                    <strong>物质平衡方程：</strong><br>
+                    Np[Bo + (Rp - Rs)Bg] + WpBw = NBoi[(Bo - Boi)/Boi + (1+m)Cp·ΔP/(1-Swe) + (1+m)Swe·Cw·ΔP/(1-Swe) + m(Bg/Bgi - 1) + (Rsi - Rs)Bg/Boi] + We + Winj·Bw
+                </div>
+
+                <div class="divider"></div>
+                <div class="divider-label">PVT 计算模型选择</div>
+                <div class="param-grid" style="margin-bottom: 16px;">
+                    <div class="param-group" style="grid-column: span 3;">
+                        <label class="param-label">选择PVT计算模型</label>
+                        <select class="param-input" id="pvtModel" onchange="togglePVTModelParams()" style="width: 100%;">
+                            <option value="gradient">梯度模式（手动输入变化率）</option>
+                            <option value="ghassan">Ghassan经验模型</option>
+                            <option value="almarhoun" selected>Al-Marhoun模型（推荐）</option>
+                            <option value="tp58">TP58实测（Bo=-0.0028378*P+1.643）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="divider-label">储量与体积参数</div>
+                <div class="param-grid">
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">N</span> 原始地质储量</label>
+                        <input type="number" class="param-input" id="N" value="5200000" step="1000">
+                        <span class="param-unit">m³</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Boi</span> 初始原油体积系数</label>
+                        <input type="number" class="param-input" id="Boi" value="1.15" step="0.01">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Rsi</span> 初始溶解气油比</label>
+                        <input type="number" class="param-input" id="Rsi" value="50" step="1">
+                        <span class="param-unit">m³/m³</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Bgi</span> 初始气体体积系数</label>
+                        <input type="number" class="param-input" id="Bgi" value="0.004" step="0.0001">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Bw</span> 水体积系数</label>
+                        <input type="number" class="param-input" id="Bw" value="1.02" step="0.01">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">m</span> 气顶比</label>
+                        <input type="number" class="param-input" id="m" value="0" step="0.1">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+                <div class="divider-label">饱和度与压缩系数</div>
+                <div class="param-grid">
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Swe</span> 原始含水饱和度</label>
+                        <input type="number" class="param-input" id="Swe" value="0.2" step="0.01">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Cp</span> 岩石压缩系数</label>
+                        <input type="number" class="param-input" id="Cp" value="0.00045" step="0.00001">
+                        <span class="param-unit">1/MPa</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Cw</span> 水压缩系数</label>
+                        <input type="number" class="param-input" id="Cw" value="0.0004" step="0.00001">
+                        <span class="param-unit">1/MPa</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Pi</span> 初始地层压力</label>
+                        <input type="number" class="param-input" id="Pi" value="70" step="0.1">
+                        <span class="param-unit">MPa</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Pb</span> 泡点压力</label>
+                        <input type="number" class="param-input" id="Pb" value="33" step="0.1">
+                        <span class="param-unit">MPa</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">Winj</span> 累计注水量</label>
+                        <input type="number" class="param-input" id="Winj" value="0" step="100">
+                        <span class="param-unit">m³</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">T</span> 油藏温度</label>
+                        <input type="number" class="param-input" id="T" value="85" step="1">
+                        <span class="param-unit">℃</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">γg</span> 气体相对密度</label>
+                        <input type="number" class="param-input" id="gammaG" value="0.75" step="0.01">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label"><span class="symbol">γo</span> 油相相对密度</label>
+                        <input type="number" class="param-input" id="gammaO" value="0.85" step="0.01">
+                        <span class="param-unit">无量纲</span>
+                    </div>
+                </div>
+
+                <!-- 梯度模式参数 -->
+                <div id="gradientParams" style="display: none;">
+                    <div class="divider"></div>
+                    <div class="divider-label">PVT 变化率参数（压力每降低1MPa的变化量）</div>
+                    <div class="param-grid">
+                        <div class="param-group">
+                            <label class="param-label"><span class="symbol">dBo/dΔP</span> Bo增加率</label>
+                            <input type="number" class="param-input" id="dBodP" value="0.001" step="0.0001">
+                            <span class="param-unit">1/MPa</span>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label"><span class="symbol">dRs/dΔP</span> Rs减少率</label>
+                            <input type="number" class="param-input" id="dRsdP" value="0.5" step="0.01">
+                            <span class="param-unit">m³/(m³·MPa)</span>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label"><span class="symbol">dBg/dΔP</span> Bg增加率</label>
+                            <input type="number" class="param-input" id="dBgdP" value="0.00005" step="0.000001">
+                            <span class="param-unit">1/MPa</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Al-Marhoun模型提示 -->
+                <div id="almarhounInfo" style="margin-top: 16px;">
+                    <div class="formula-box" style="background: #f0fdf4; border-color: #86efac;">
+                        <strong>Al-Marhoun模型</strong>：自动计算Rs、Bo、Co、Bg、Z因子<br>
+                        <small style="color: #6b7280;">基于压力、温度、气体相对密度和油相相对密度计算PVT参数</small>
+                    </div>
+                </div>
+
+                <!-- Ghassan模型提示 -->
+                <div id="ghassanInfo" style="display: none; margin-top: 16px;">
+                    <div class="formula-box" style="background: #fef3c7; border-color: #fcd34d;">
+                        <strong>Ghassan经验模型</strong>：使用经验公式计算Bo<br>
+                        <small style="color: #6b7280;">Bo = 0.9657876 + 4.8141×10⁻⁵F - 6.8987×10⁻¹⁰F² + 7.73×10⁻⁴T<br>
+                        F = Rs^1.2 × γg^(-0.147) × γo^(-5.222)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据输入 -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <div class="card-header-icon success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="card-title">井历史数据输入</div>
+                    <div class="card-subtitle">粘贴包含生产数据的表格（Tab分隔）</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-text">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    <span>请粘贴包含以下列的数据：日期、日产油量、日产水量、日产气量、累计注气量、累计产油量、累计产水量、累计产气量、水气比、气油比、含水、流压、原油密度、地面粘度。<strong>第一行数据为初始状态。</strong></span>
+                </div>
+
+                <textarea class="data-textarea" id="historyData" placeholder="在此粘贴数据...">日期	日产油量	日产水量	日产气量	累计注气量	累计产油量	累计产水量	累计产气量	水气比	气油比	含水	流压	原油密度	地面粘度
+2022-09-15	49.2838067	94.7	4094		49.76936	95	4094			70	69.156	0.8238
+2024-08-18	54.6349664	0.5	18849		68615.51	315	10938143			1.1	67.277216	0.8238	0.24
+2024-08-19	53.5542747	0.6	18521		68668.35	315	10956664			1.4	67.270405	0.8238	0.24
+2024-08-20	52.2334294	2	18899		68721.18	317	10975563			4.34	67.263584	0.8238	0.24</textarea>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="parseAndCalculate()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        解析并计算
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadSampleData()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        加载示例
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearData()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        清空
+                    </button>
+                </div>
+                <div id="parseMessage"></div>
+            </div>
+        </div>
+
+        <!-- 计算结果表格 -->
+        <div class="card fade-in" id="calculationSection" style="display: none;">
+            <div class="card-header">
+                <div class="card-header-icon accent">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="3" y1="9" x2="21" y2="9"/>
+                        <line x1="9" y1="21" x2="9" y2="9"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="card-title">计算过程与数据展示</div>
+                    <div class="card-subtitle">每个时间点的详细计算结果</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table class="data-table" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>累计产油<br>(m³)</th>
+                                    <th>累计产水<br>(m³)</th>
+                                    <th>累计产气<br>(m³)</th>
+                                    <th>压力<br>(MPa)</th>
+                                    <th>ΔP<br>(MPa)</th>
+                                    <th>Bo</th>
+                                    <th>Rs<br>(m³/m³)</th>
+                                    <th>Bg</th>
+                                    <th>Rp<br>(m³/m³)</th>
+                                    <th>弹性能<br>(m³)</th>
+                                    <th>地层压缩能<br>(m³)</th>
+                                    <th>水膨胀能<br>(m³)</th>
+                                    <th>气弹性能<br>(m³)</th>
+                                    <th>溶解气能<br>(m³)</th>
+                                    <th>注水能<br>(m³)</th>
+                                    <th>累计产出<br>(m³)</th>
+                                    <th>水侵量We<br>(m³)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 详细计算过程（可折叠） -->
+                <div class="collapsible" id="detailSection" style="margin-top: 20px;">
+                    <div class="collapsible-header" onclick="toggleCollapsible('detailSection')">
+                        <div class="collapsible-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                            详细计算过程（点击展开查看每个时步的公式和数值）
+                        </div>
+                        <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-body" id="detailBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表结果 -->
+        <div class="card fade-in" id="chartSection" style="display: none;">
+            <div class="card-header">
+                <div class="card-header-icon warning">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="card-title">能量计算结果与曲线图</div>
+                    <div class="card-subtitle">各项驱动能量及水侵量分析</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="energy-grid" id="energySummary">
+                </div>
+
+                <div class="chart-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="chart-card">
+                        <div class="chart-title">弹性能</div>
+                        <div class="chart-wrapper">
+                            <canvas id="elasticChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">地层压缩能</div>
+                        <div class="chart-wrapper">
+                            <canvas id="formationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">地层水膨胀能</div>
+                        <div class="chart-wrapper">
+                            <canvas id="waterExpChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">溶解气脱气能</div>
+                        <div class="chart-wrapper">
+                            <canvas id="dissolvedChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">累计产出 Np[Bo+(Rp-Rs)Bg]+WpBw</div>
+                        <div class="chart-wrapper">
+                            <canvas id="productionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">水侵量 We</div>
+                        <div class="chart-wrapper">
+                            <canvas id="waterInfluxChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="margin-top: 24px;">
+                    <button class="btn btn-success" onclick="downloadResults()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        下载结果 (CSV)
+                    </button>
+                    <button class="btn btn-primary" onclick="downloadChartImage()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        下载图表 (PNG)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let calculationResults = [];
+        let charts = {};
+
+        // 获取基础参数
+        function getParams() {
+            const T_C = parseFloat(document.getElementById('T').value);  // 摄氏度
+            const T_F = T_C * 9/5 + 32;  // 转换为华氏度
+
+            return {
+                N: parseFloat(document.getElementById('N').value),
+                Boi: parseFloat(document.getElementById('Boi').value),
+                Rsi: parseFloat(document.getElementById('Rsi').value),
+                Bgi: parseFloat(document.getElementById('Bgi').value),
+                Bw: parseFloat(document.getElementById('Bw').value),
+                m: parseFloat(document.getElementById('m').value),
+                Swe: parseFloat(document.getElementById('Swe').value),
+                Cp: parseFloat(document.getElementById('Cp').value),
+                Cw: parseFloat(document.getElementById('Cw').value),
+                Pi: parseFloat(document.getElementById('Pi').value),
+                Pb: parseFloat(document.getElementById('Pb').value),
+                Winj: parseFloat(document.getElementById('Winj').value),
+                T: T_C,
+                T_F: T_F,
+                gammaG: parseFloat(document.getElementById('gammaG').value),
+                gammaO: parseFloat(document.getElementById('gammaO').value),
+                pvtModel: document.getElementById('pvtModel').value,
+                dBodP: parseFloat(document.getElementById('dBodP').value),
+                dRsdP: parseFloat(document.getElementById('dRsdP').value),
+                dBgdP: parseFloat(document.getElementById('dBgdP').value)
+            };
+        }
+
+        // 切换PVT模型参数显示
+        function togglePVTModelParams() {
+            const model = document.getElementById('pvtModel').value;
+            document.getElementById('gradientParams').style.display = model === 'gradient' ? 'block' : 'none';
+            document.getElementById('almarhounInfo').style.display = model === 'almarhoun' ? 'block' : 'none';
+            document.getElementById('ghassanInfo').style.display = model === 'ghassan' ? 'block' : 'none';
+        }
+
+        // Ghassan经验模型计算Bo
+        function calculateGhassanBo(Rs, gammaG, gammaO, T_F) {
+            // F = Rs^1.2 × γg^(-0.147) × γo^(-5.222)
+            const F = Math.pow(Rs, 1.2) * Math.pow(gammaG, -0.147) * Math.pow(gammaO, -5.222);
+            // Bo = 0.9657876 + 4.8141×10^-5×F - 6.8987×10^-10×F^2 + 7.73×10^-4×T
+            const Bo = 0.9657876 + 4.8141e-5 * F - 6.8987e-10 * F * F + 7.73e-4 * T_F;
+            return Bo;
+        }
+
+        // Ghassan模型计算PVT参数
+        function calculateGhassanPVT(params, P) {
+            const gammaG = params.gammaG;
+            const gammaO = params.gammaO;
+            const T_F = params.T_F;
+            const T_R = T_F + 459.67;
+            const Pi = params.Pi;
+
+            let Bo, Rs, Bg;
+
+            // Ghassan模型：Rs使用梯度模式
+            // 压力增大时Rs减小，导致F减小，Bo减小（正确的物理规律）
+            const deltaP = Pi - P;
+            Rs = params.Rsi - params.dRsdP * deltaP;
+
+            // Bo使用Ghassan公式，基于梯度计算出的Rs
+            Bo = calculateGhassanBo(Rs, gammaG, gammaO, T_F);
+
+            // Bg计算（使用Al-Marhoun模型）
+            const Tc = 169.2 + 349.5 * gammaG - 74.0 * gammaG * gammaG;
+            const Z = 1 + (0.015 * Math.pow(P, 0.83) - 0.03) * Math.pow(T_R / Tc, 1.1) * Math.pow(gammaG, 0.1);
+            const T_K = params.T + 273.15;
+            Bg = 0.02827 * Z * T_K / P;
+
+            return { Rs, Bo, Bg };
+        }
+
+        // TP58实测模型计算PVT参数
+        function calculateTP58PVT(params, P) {
+            const gammaG = params.gammaG;
+            const gammaO = params.gammaO;
+            const T_F = params.T_F;
+            const T_R = T_F + 459.67;
+            const Pi = params.Pi;
+
+            let Bo, Rs, Bg;
+
+            // TP58实测模型：Bo直接由压力公式计算
+            // Bo = -0.0028378 × P + 1.643
+            Bo = -0.0028378 * P + 1.643;
+
+            // Rs使用梯度模式（与Ghassan模型一致）
+            const deltaP = Pi - P;
+            Rs = params.Rsi - params.dRsdP * deltaP;
+
+            // Bg计算（使用Al-Marhoun模型）
+            const Tc = 169.2 + 349.5 * gammaG - 74.0 * gammaG * gammaG;
+            const Z = 1 + (0.015 * Math.pow(P, 0.83) - 0.03) * Math.pow(T_R / Tc, 1.1) * Math.pow(gammaG, 0.1);
+            const T_K = params.T + 273.15;
+            Bg = 0.02827 * Z * T_K / P;
+
+            return { Rs, Bo, Bg };
+        }
+
+        // Al-Marhoun模型计算PVT参数
+        function calculateAlMarhounPVT(params, P) {
+            const gammaG = params.gammaG;
+            const gammaO = params.gammaO;
+            const T_F = params.T_F;
+            const T_R = T_F + 459.67;  // 绝对温度 Rankine
+            const Pb = params.Pb;  // 泡点压力
+
+            // 压力转换：MPa转psi
+            const P_psi = P * 145.0377;
+            const Pb_psi = Pb * 145.0377;
+
+            let Bo, Rs, Co;
+
+            // 判断压力是在泡点以上还是以下
+            if (P >= Pb) {
+                // ===== 压力高于泡点：欠饱和油 =====
+                // Rs保持在泡点时的最大值
+                const Rs_exp = (0.000795 * T_F - 1.669) / Math.pow(gammaO, 0.289);
+                // Al-Marhoun模型 Rs计算：係数0.04用于得到更合理的Rs值
+                Rs = 0.04 * gammaG * Math.pow(Pb_psi, 1.042) * Math.exp(Rs_exp);
+
+                // 计算泡点压力下的Bo
+                const F_standing_b = Rs * Math.sqrt(gammaG / gammaO) + 1.25 * T_F;
+                const Bo_at_Pb = 0.972 + 0.000147 * Math.pow(F_standing_b, 1.175);
+
+                // 计算油的压缩系数
+                Co = (55.233 - 0.588 * Rs) * 1e-6 * 145.0377;
+
+                // 使用压缩系数计算Bo：Bo = Bo_b × exp[Co × (Pb - P)]
+                // 注意：P > Pb时，(Pb - P)为负，exp为小于1，Bo减小（正确）
+                Bo = Bo_at_Pb * Math.exp(Co * (Pb - P));
+
+            } else {
+                // ===== 压力低于泡点：饱和油 =====
+                // Rs随压力变化
+                const Rs_exp = (0.000795 * T_F - 1.669) / Math.pow(gammaO, 0.289);
+                // Al-Marhoun模型 Rs计算：係数0.04用于得到更合理的Rs值
+                Rs = 0.04 * gammaG * Math.pow(P_psi, 1.042) * Math.exp(Rs_exp);
+
+                // Bo使用Standing相关性
+                const F_standing = Rs * Math.sqrt(gammaG / gammaO) + 1.25 * T_F;
+                Bo = 0.972 + 0.000147 * Math.pow(F_standing, 1.175);
+
+                // 压缩系数
+                Co = (55.233 - 0.588 * Rs) * 1e-6 * 145.0377;
+            }
+
+            // 4) 压缩因子 Z
+            // 临界温度估算 Tc (Rankine): 使用气体相对密度估算
+            const Tc = 169.2 + 349.5 * gammaG - 74.0 * gammaG * gammaG;  // 临界温度 °R
+            // z = 1 + (0.015×P^0.83 - 0.03) × (T/Tc)^1.1 × γg^0.1
+            const Z = 1 + (0.015 * Math.pow(P, 0.83) - 0.03) * Math.pow(T_R / Tc, 1.1) * Math.pow(gammaG, 0.1);
+
+            // 5) 气体体积系数 Bg
+            // Bg = 0.02827 × Z × T / P  (T用绝对温度K, P用MPa)
+            const T_K = params.T + 273.15;
+            const Bg = 0.02827 * Z * T_K / P;
+
+            return { Rs, Bo, Bg, Co, Z };
+        }
+
+        // 根据选择的模型计算PVT参数
+        function calculatePVTByModel(params, P) {
+            const model = params.pvtModel;
+            const deltaP = params.Pi - P;
+
+            if (model === 'gradient') {
+                // 梯度模式
+                const Bo = params.Boi + params.dBodP * deltaP;
+                const Rs = params.Rsi - params.dRsdP * deltaP;
+                const Bg = params.Bgi + params.dBgdP * deltaP;
+                return { Bo, Rs, Bg };
+            } else if (model === 'almarhoun') {
+                // Al-Marhoun模型
+                const pvt = calculateAlMarhounPVT(params, P);
+                return { Bo: pvt.Bo, Rs: pvt.Rs, Bg: pvt.Bg };
+            } else if (model === 'ghassan') {
+                // Ghassan模型：使用压力依赖的Rs和Ghassan公式计算Bo
+                const pvt = calculateGhassanPVT(params, P);
+                return { Bo: pvt.Bo, Rs: pvt.Rs, Bg: pvt.Bg };
+            } else if (model === 'tp58') {
+                // TP58实测模型：Bo由实测公式计算，Rs使用Ghassan逻辑
+                const pvt = calculateTP58PVT(params, P);
+                return { Bo: pvt.Bo, Rs: pvt.Rs, Bg: pvt.Bg };
+            }
+
+            // 默认使用梯度模式
+            return {
+                Bo: params.Boi + params.dBodP * deltaP,
+                Rs: params.Rsi - params.dRsdP * deltaP,
+                Bg: params.Bgi + params.dBgdP * deltaP
+            };
+        }
+
+        // 校正压力数据：关井期间压力保持不变
+        // 算法：检测累计产量不变的时段为关井期，关井期间压力维持上一时步值
+        // 关井结束后，压力继续按照生产期间的梯度下降
+        function correctPressureData(data) {
+            if (data.length < 2) return;
+
+            // 保存原始压力用于计算梯度
+            const originalPressures = data.map(d => d.pressure);
+
+            // 标记每个时步是否为关井状态（累计产量与上一时步相同）
+            const isShutIn = [false]; // 第一个时步不是关井
+            for (let i = 1; i < data.length; i++) {
+                // 如果累计产油量和累计产水量都没有变化，认为是关井
+                const oilSame = Math.abs(data[i].cumOil - data[i-1].cumOil) < 0.001;
+                const waterSame = Math.abs(data[i].cumWater - data[i-1].cumWater) < 0.001;
+                isShutIn.push(oilSame && waterSame);
+            }
+
+            // 计算校正后的压力
+            // 思路：统计关井的时步数，生产恢复时跳过这些时步的压降
+            let shutInCount = 0; // 累计关井时步数
+
+            for (let i = 1; i < data.length; i++) {
+                if (isShutIn[i]) {
+                    // 关井期间：压力维持上一时步的值
+                    data[i].pressure = data[i-1].pressure;
+                    shutInCount++;
+                } else {
+                    // 生产期间：使用原始数据中跳过关井时步后的压力
+                    // 即使用 (i - shutInCount) 位置的原始压力
+                    const effectiveIndex = i - shutInCount;
+                    if (effectiveIndex >= 0 && effectiveIndex < originalPressures.length) {
+                        data[i].pressure = originalPressures[effectiveIndex];
+                    }
+                }
+            }
+        }
+
+        // 解析数据并计算
+        function parseAndCalculate() {
+            const rawData = document.getElementById('historyData').value;
+            const lines = rawData.trim().split('\n');
+
+            if (lines.length < 2) {
+                showMessage('parseMessage', '数据不足，请至少输入表头和一行数据', 'error');
+                return;
+            }
+
+            const params = getParams();
+            const data = [];
+
+            // 跳过表头，解析数据
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split('\t');
+                if (cols.length < 12) continue;
+
+                const row = {
+                    date: cols[0].trim(),
+                    dailyOil: parseFloat(cols[1]) || 0,
+                    dailyWater: parseFloat(cols[2]) || 0,
+                    dailyGas: parseFloat(cols[3]) || 0,
+                    cumGasInj: parseFloat(cols[4]) || 0,
+                    cumOil: parseFloat(cols[5]) || 0,
+                    cumWater: parseFloat(cols[6]) || 0,
+                    cumGas: parseFloat(cols[7]) || 0,
+                    waterGasRatio: parseFloat(cols[8]) || 0,
+                    GOR: parseFloat(cols[9]) || 0,
+                    waterCut: parseFloat(cols[10]) || 0,
+                    pressure: parseFloat(cols[11]) || 0,
+                    oilDensity: parseFloat(cols[12]) || 0.8238,
+                    viscosity: parseFloat(cols[13]) || 0
+                };
+
+                data.push(row);
+            }
+
+            if (data.length === 0) {
+                showMessage('parseMessage', '未能解析到有效数据，请检查格式', 'error');
+                return;
+            }
+
+            // 校正压力数据：关井期间压力保持不变
+            correctPressureData(data);
+
+            // 自动将第一行压力设置为初始压力 Pi
+            if (data[0].pressure > 0) {
+                document.getElementById('Pi').value = data[0].pressure;
+                params.Pi = data[0].pressure;
+            }
+
+            // 执行计算
+            calculationResults = calculateEnergies(data, params);
+
+            // 显示结果
+            displayResults();
+            generateDetailedCalculations(data, params);
+            drawCharts();
+
+            document.getElementById('calculationSection').style.display = 'block';
+            document.getElementById('chartSection').style.display = 'block';
+
+            showMessage('parseMessage', `成功解析 ${data.length} 条数据并完成计算`, 'success');
+
+            // 滚动到结果区域
+            document.getElementById('calculationSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 计算各项能量
+        function calculateEnergies(data, params) {
+            const results = [];
+            const Pi = data[0].pressure;
+
+            // 如果使用Al-Marhoun模型，计算初始PVT参数并更新params
+            if (params.pvtModel === 'almarhoun') {
+                const initialPVT = calculateAlMarhounPVT(params, Pi);
+                params.Boi = initialPVT.Bo;
+                params.Rsi = initialPVT.Rs;
+                params.Bgi = initialPVT.Bg;
+            } else if (params.pvtModel === 'ghassan') {
+                // Ghassan模型：从Al-Marhoun计算初始Rs，然后用Ghassan公式计算Bo
+                const Pi_psi = Pi * 145.0377;
+                const Rs_exp = (0.000795 * params.T_F - 1.669) / Math.pow(params.gammaO, 0.289);
+                const Rs_initial = 0.04 * params.gammaG * Math.pow(Pi_psi, 1.042) * Math.exp(Rs_exp);
+                const Bo_initial = calculateGhassanBo(Rs_initial, params.gammaG, params.gammaO, params.T_F);
+
+                // 计算Bg（Al-Marhoun方式）
+                const T_R = params.T_F + 459.67;
+                const Tc = 169.2 + 349.5 * params.gammaG - 74.0 * params.gammaG * params.gammaG;
+                const Z = 1 + (0.015 * Math.pow(Pi, 0.83) - 0.03) * Math.pow(T_R / Tc, 1.1) * Math.pow(params.gammaG, 0.1);
+                const T_K = params.T + 273.15;
+                const Bg_initial = 0.02827 * Z * T_K / Pi;
+
+                params.Boi = Bo_initial;
+                params.Rsi = Rs_initial;
+                params.Bgi = Bg_initial;
+            } else if (params.pvtModel === 'tp58') {
+                // TP58实测模型：Bo由实测公式直接计算，Rs从Al-Marhoun计算
+                const Pi_psi = Pi * 145.0377;
+                const Rs_exp = (0.000795 * params.T_F - 1.669) / Math.pow(params.gammaO, 0.289);
+                const Rs_initial = 0.04 * params.gammaG * Math.pow(Pi_psi, 1.042) * Math.exp(Rs_exp);
+                const Bo_initial = -0.0028378 * Pi + 1.643;
+
+                // 计算Bg（Al-Marhoun方式）
+                const T_R = params.T_F + 459.67;
+                const Tc = 169.2 + 349.5 * params.gammaG - 74.0 * params.gammaG * params.gammaG;
+                const Z = 1 + (0.015 * Math.pow(Pi, 0.83) - 0.03) * Math.pow(T_R / Tc, 1.1) * Math.pow(params.gammaG, 0.1);
+                const T_K = params.T + 273.15;
+                const Bg_initial = 0.02827 * Z * T_K / Pi;
+
+                params.Boi = Bo_initial;
+                params.Rsi = Rs_initial;
+                params.Bgi = Bg_initial;
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const P = row.pressure;
+                const deltaP = Pi - P;
+
+                // 计算PVT参数（使用选择的模型）
+                const pvt = calculatePVTByModel(params, P);
+                const Bo = pvt.Bo;
+                const Rs = pvt.Rs;
+                const Bg = pvt.Bg;
+
+                // 累计产气油比
+                const Rp = row.cumOil > 0 ? row.cumGas / row.cumOil : 0;
+
+                // 计算各项能量
+                const NBoi = params.N * params.Boi;
+
+                // 1. 弹性能
+                const elasticEnergy = NBoi * (Bo - params.Boi) / params.Boi;
+
+                // 2. 地层压缩能
+                const formationCompEnergy = NBoi * (1 + params.m) * params.Cp * deltaP / (1 - params.Swe);
+
+                // 3. 地层水膨胀能
+                const waterExpansionEnergy = NBoi * (1 + params.m) * params.Swe * params.Cw * deltaP / (1 - params.Swe);
+
+                // 4. 气体弹性能
+                const gasElasticEnergy = NBoi * params.m * (Bg / params.Bgi - 1);
+
+                // 5. 溶解气脱气能
+                const dissolvedGasEnergy = NBoi * (params.Rsi - Rs) * Bg / params.Boi;
+
+                // 6. 注入水能量
+                const injectionEnergy = params.Winj * params.Bw;
+
+                // 累计产出油气
+                const oilGasProduction = row.cumOil * (Bo + (Rp - Rs) * Bg);
+
+                // 累计产出水
+                const waterProduction = row.cumWater * params.Bw;
+
+                // 总产出
+                const totalProduction = oilGasProduction + waterProduction;
+
+                // 总驱动能量（不含水侵）
+                const totalDriveEnergy = elasticEnergy + formationCompEnergy +
+                                         waterExpansionEnergy + gasElasticEnergy +
+                                         dissolvedGasEnergy + injectionEnergy;
+
+                // 水侵量 = 总产出 - 总驱动能量
+                const waterInflux = totalProduction - totalDriveEnergy;
+
+                results.push({
+                    date: row.date,
+                    cumOil: row.cumOil,
+                    cumWater: row.cumWater,
+                    cumGas: row.cumGas,
+                    pressure: P,
+                    deltaP: deltaP,
+                    Bo: Bo,
+                    Rs: Rs,
+                    Bg: Bg,
+                    Rp: Rp,
+                    elasticEnergy: elasticEnergy,
+                    formationCompEnergy: formationCompEnergy,
+                    waterExpansionEnergy: waterExpansionEnergy,
+                    gasElasticEnergy: gasElasticEnergy,
+                    dissolvedGasEnergy: dissolvedGasEnergy,
+                    injectionEnergy: injectionEnergy,
+                    oilGasProduction: oilGasProduction,
+                    waterProduction: waterProduction,
+                    totalProduction: totalProduction,
+                    waterInflux: waterInflux
+                });
+            }
+
+            return results;
+        }
+
+        // 显示计算结果表格
+        function displayResults() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            calculationResults.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.date}</td>
+                    <td>${r.cumOil.toFixed(2)}</td>
+                    <td>${r.cumWater.toFixed(2)}</td>
+                    <td>${r.cumGas.toFixed(0)}</td>
+                    <td>${r.pressure.toFixed(3)}</td>
+                    <td>${r.deltaP.toFixed(3)}</td>
+                    <td>${r.Bo.toFixed(4)}</td>
+                    <td>${r.Rs.toFixed(2)}</td>
+                    <td>${r.Bg.toFixed(6)}</td>
+                    <td>${r.Rp.toFixed(2)}</td>
+                    <td>${r.elasticEnergy.toFixed(2)}</td>
+                    <td>${r.formationCompEnergy.toFixed(2)}</td>
+                    <td>${r.waterExpansionEnergy.toFixed(2)}</td>
+                    <td>${r.gasElasticEnergy.toFixed(2)}</td>
+                    <td>${r.dissolvedGasEnergy.toFixed(2)}</td>
+                    <td>${r.injectionEnergy.toFixed(2)}</td>
+                    <td>${r.totalProduction.toFixed(2)}</td>
+                    <td>${r.waterInflux.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 显示能量汇总卡片
+            if (calculationResults.length > 0) {
+                const last = calculationResults[calculationResults.length - 1];
+                const summaryDiv = document.getElementById('energySummary');
+
+                const energyData = [
+                    { label: '弹性能', value: last.elasticEnergy, color: '#6366f1' },
+                    { label: '地层压缩能', value: last.formationCompEnergy, color: '#8b5cf6' },
+                    { label: '水膨胀能', value: last.waterExpansionEnergy, color: '#06b6d4' },
+                    { label: '气体弹性能', value: last.gasElasticEnergy, color: '#f59e0b' },
+                    { label: '溶解气脱气能', value: last.dissolvedGasEnergy, color: '#ef4444' },
+                    { label: '注入水能量', value: last.injectionEnergy, color: '#64748b' }
+                ];
+
+                let html = '';
+                energyData.forEach(item => {
+                    html += `
+                        <div class="energy-card">
+                            <div class="icon" style="background: ${item.color}15; color: ${item.color};">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                            </div>
+                            <div class="label">${item.label}</div>
+                            <div class="value">${item.value.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+
+                // 特殊卡片
+                html += `
+                    <div class="energy-card highlight">
+                        <div class="icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                            </svg>
+                        </div>
+                        <div class="label">水侵量 We</div>
+                        <div class="value">${last.waterInflux.toFixed(2)} m³</div>
+                    </div>
+                    <div class="energy-card" style="background: var(--gray-900);">
+                        <div class="icon" style="background: rgba(255,255,255,0.1); color: white;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                        <div class="label" style="color: rgba(255,255,255,0.7);">累计产出</div>
+                        <div class="value" style="color: white;">${last.totalProduction.toFixed(2)} m³</div>
+                    </div>
+                `;
+
+                summaryDiv.innerHTML = html;
+            }
+        }
+
+        // 绘制图表
+        function drawCharts() {
+            // 销毁旧图表
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+
+            // 跳过第一个点（初始数据点），从第二个点开始绘图
+            const chartData = calculationResults.slice(1);
+            const labels = chartData.map(r => r.date);
+
+            // Chart.js 默认配置
+            Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = '#64748b';
+
+            // 通用图表配置
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        grid: { color: '#f1f5f9' },
+                        title: { display: true, text: 'm³' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            };
+
+            // 1. 弹性能图
+            charts.elastic = new Chart(document.getElementById('elasticChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '弹性能',
+                        data: chartData.map(r => r.elasticEnergy),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 2. 地层压缩能图
+            charts.formation = new Chart(document.getElementById('formationChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '地层压缩能',
+                        data: chartData.map(r => r.formationCompEnergy),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 3. 地层水膨胀能图
+            charts.waterExp = new Chart(document.getElementById('waterExpChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '水膨胀能',
+                        data: chartData.map(r => r.waterExpansionEnergy),
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 4. 溶解气脱气能图
+            charts.dissolved = new Chart(document.getElementById('dissolvedChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '溶解气能',
+                        data: chartData.map(r => r.dissolvedGasEnergy),
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 5. 累计产出图
+            charts.production = new Chart(document.getElementById('productionChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '累计产出',
+                        data: chartData.map(r => r.totalProduction),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 6. 水侵量图
+            charts.waterInflux = new Chart(document.getElementById('waterInfluxChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '水侵量 We',
+                        data: chartData.map(r => r.waterInflux),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        // 下载结果
+        function downloadResults() {
+            if (calculationResults.length === 0) {
+                alert('没有计算结果可下载');
+                return;
+            }
+
+            const headers = ['日期', '累计产油(m³)', '累计产水(m³)', '累计产气(m³)', '压力(MPa)',
+                            'ΔP(MPa)', 'Bo', 'Rs(m³/m³)', 'Bg', 'Rp(m³/m³)',
+                            '弹性能(m³)', '地层压缩能(m³)', '水膨胀能(m³)', '气弹性能(m³)',
+                            '溶解气能(m³)', '注水能(m³)', '累计产出(m³)', '水侵量We(m³)'];
+
+            let csv = headers.join(',') + '\n';
+
+            calculationResults.forEach(r => {
+                const row = [
+                    r.date, r.cumOil.toFixed(2), r.cumWater.toFixed(2), r.cumGas.toFixed(0),
+                    r.pressure.toFixed(3), r.deltaP.toFixed(3), r.Bo.toFixed(4), r.Rs.toFixed(2),
+                    r.Bg.toFixed(6), r.Rp.toFixed(2), r.elasticEnergy.toFixed(2),
+                    r.formationCompEnergy.toFixed(2), r.waterExpansionEnergy.toFixed(2),
+                    r.gasElasticEnergy.toFixed(2), r.dissolvedGasEnergy.toFixed(2),
+                    r.injectionEnergy.toFixed(2), r.totalProduction.toFixed(2), r.waterInflux.toFixed(2)
+                ];
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '油藏能量计算结果_' + new Date().toISOString().slice(0,10) + '.csv';
+            link.click();
+        }
+
+        // 下载图表图片
+        function downloadChartImage() {
+            const canvas = document.getElementById('energyChart');
+            const link = document.createElement('a');
+            link.download = '能量曲线图_' + new Date().toISOString().slice(0,10) + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // 清空数据
+        function clearData() {
+            document.getElementById('historyData').value = '';
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('energySummary').innerHTML = '';
+            document.getElementById('calculationSection').style.display = 'none';
+            document.getElementById('chartSection').style.display = 'none';
+            calculationResults = [];
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+            document.getElementById('parseMessage').innerHTML = '';
+        }
+
+        // 加载示例数据
+        function loadSampleData() {
+            const sampleData = `日期	日产油量	日产水量	日产气量	累计注气量	累计产油量	累计产水量	累计产气量	水气比	气油比	含水	流压	原油密度	地面粘度
+2022-09-15	49.2838067	94.7	4094		49.76936	95	4094			70	69.156	0.8238
+2024-08-18	54.6349664	0.5	18849		68615.51	315	10938143			1.1	67.277216	0.8238	0.24
+2024-08-19	53.5542747	0.6	18521		68668.35	315	10956664			1.4	67.270405	0.8238	0.24
+2024-08-20	52.2334294	2	18899		68721.18	317	10975563			4.34	67.263584	0.8238	0.24`;
+            document.getElementById('historyData').value = sampleData;
+            showMessage('parseMessage', '示例数据已加载，点击"解析并计算"开始计算', 'success');
+        }
+
+        // 显示消息
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            const icon = type === 'error'
+                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+
+            element.innerHTML = `<div class="message message-${type === 'error' ? 'error' : 'success'}">${icon}<span>${message}</span></div>`;
+        }
+
+        // 折叠/展开功能
+        function toggleCollapsible(id) {
+            const element = document.getElementById(id);
+            element.classList.toggle('open');
+        }
+
+        // 生成详细计算过程
+        function generateDetailedCalculations(data, params) {
+            const detailBody = document.getElementById('detailBody');
+            let html = '';
+
+            // 跳过第一个点（初始状态）
+            for (let i = 1; i < calculationResults.length; i++) {
+                const r = calculationResults[i];
+                const row = data[i];
+
+                html += `
+                <div class="collapsible" id="step_${i}">
+                    <div class="collapsible-header" onclick="toggleCollapsible('step_${i}')">
+                        <div class="collapsible-title">
+                            <span style="color: var(--primary);">时步 ${i}</span>
+                            <span style="font-weight: normal; color: var(--gray-500);">| ${r.date}</span>
+                            <span style="font-weight: normal; color: var(--gray-400); font-size: 11px;">We = ${r.waterInflux.toFixed(2)} m³</span>
+                        </div>
+                        <svg class="collapsible-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-body">
+
+                    <!-- PVT参数计算 -->
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">PVT参数计算</div>
+                        <div class="calc-formula-eq">ΔP = Pi - P</div>
+                        <div class="calc-formula-values">= ${params.Pi.toFixed(3)} - ${r.pressure.toFixed(3)}</div>
+                        <div class="calc-formula-result">= ${r.deltaP.toFixed(4)} MPa</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">原油体积系数 Bo</div>
+                        <div class="calc-formula-eq">Bo = Boi + (dBo/dΔP) × ΔP</div>
+                        <div class="calc-formula-values">= ${params.Boi.toFixed(4)} + ${params.dBodP.toFixed(6)} × ${r.deltaP.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.Bo.toFixed(6)}</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">溶解气油比 Rs</div>
+                        <div class="calc-formula-eq">Rs = Rsi - (dRs/dΔP) × ΔP</div>
+                        <div class="calc-formula-values">= ${params.Rsi.toFixed(2)} - ${params.dRsdP.toFixed(4)} × ${r.deltaP.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.Rs.toFixed(4)} m³/m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">气体体积系数 Bg</div>
+                        <div class="calc-formula-eq">Bg = Bgi + (dBg/dΔP) × ΔP</div>
+                        <div class="calc-formula-values">= ${params.Bgi.toFixed(6)} + ${params.dBgdP.toFixed(8)} × ${r.deltaP.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.Bg.toFixed(8)}</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">累计产气油比 Rp</div>
+                        <div class="calc-formula-eq">Rp = 累计产气量 / 累计产油量</div>
+                        <div class="calc-formula-values">= ${r.cumGas.toFixed(2)} / ${r.cumOil.toFixed(2)}</div>
+                        <div class="calc-formula-result">= ${r.Rp.toFixed(4)} m³/m³</div>
+                    </div>
+
+                    <!-- 能量计算 -->
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">1. 弹性能</div>
+                        <div class="calc-formula-eq">E_elastic = N × Boi × (Bo - Boi) / Boi</div>
+                        <div class="calc-formula-values">= ${params.N.toFixed(2)} × ${params.Boi.toFixed(4)} × (${r.Bo.toFixed(6)} - ${params.Boi.toFixed(4)}) / ${params.Boi.toFixed(4)}</div>
+                        <div class="calc-formula-result ${r.elasticEnergy < 0 ? 'negative' : ''}">= ${r.elasticEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">2. 地层压缩能</div>
+                        <div class="calc-formula-eq">E_formation = N × Boi × (1 + m) × Cp × ΔP / (1 - Swe)</div>
+                        <div class="calc-formula-values">= ${params.N.toFixed(2)} × ${params.Boi.toFixed(4)} × (1 + ${params.m.toFixed(2)}) × ${params.Cp.toFixed(6)} × ${r.deltaP.toFixed(4)} / (1 - ${params.Swe.toFixed(2)})</div>
+                        <div class="calc-formula-result ${r.formationCompEnergy < 0 ? 'negative' : ''}">= ${r.formationCompEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">3. 地层水膨胀能</div>
+                        <div class="calc-formula-eq">E_water_exp = N × Boi × (1 + m) × Swe × Cw × ΔP / (1 - Swe)</div>
+                        <div class="calc-formula-values">= ${params.N.toFixed(2)} × ${params.Boi.toFixed(4)} × (1 + ${params.m.toFixed(2)}) × ${params.Swe.toFixed(2)} × ${params.Cw.toFixed(6)} × ${r.deltaP.toFixed(4)} / (1 - ${params.Swe.toFixed(2)})</div>
+                        <div class="calc-formula-result ${r.waterExpansionEnergy < 0 ? 'negative' : ''}">= ${r.waterExpansionEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">4. 气体弹性能</div>
+                        <div class="calc-formula-eq">E_gas = N × Boi × m × (Bg / Bgi - 1)</div>
+                        <div class="calc-formula-values">= ${params.N.toFixed(2)} × ${params.Boi.toFixed(4)} × ${params.m.toFixed(2)} × (${r.Bg.toFixed(8)} / ${params.Bgi.toFixed(6)} - 1)</div>
+                        <div class="calc-formula-result ${r.gasElasticEnergy < 0 ? 'negative' : ''}">= ${r.gasElasticEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">5. 溶解气脱气能</div>
+                        <div class="calc-formula-eq">E_dissolved = N × Boi × (Rsi - Rs) × Bg / Boi</div>
+                        <div class="calc-formula-values">= ${params.N.toFixed(2)} × ${params.Boi.toFixed(4)} × (${params.Rsi.toFixed(2)} - ${r.Rs.toFixed(4)}) × ${r.Bg.toFixed(8)} / ${params.Boi.toFixed(4)}</div>
+                        <div class="calc-formula-result ${r.dissolvedGasEnergy < 0 ? 'negative' : ''}">= ${r.dissolvedGasEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">6. 注入水能量</div>
+                        <div class="calc-formula-eq">E_inj = Winj × Bw</div>
+                        <div class="calc-formula-values">= ${params.Winj.toFixed(2)} × ${params.Bw.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.injectionEnergy.toFixed(4)} m³</div>
+                    </div>
+
+                    <!-- 产出计算 -->
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">累计产出油气</div>
+                        <div class="calc-formula-eq">Q_og = Np × [Bo + (Rp - Rs) × Bg]</div>
+                        <div class="calc-formula-values">= ${r.cumOil.toFixed(2)} × [${r.Bo.toFixed(6)} + (${r.Rp.toFixed(4)} - ${r.Rs.toFixed(4)}) × ${r.Bg.toFixed(8)}]</div>
+                        <div class="calc-formula-result">= ${r.oilGasProduction.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">累计产出水</div>
+                        <div class="calc-formula-eq">Q_w = Wp × Bw</div>
+                        <div class="calc-formula-values">= ${r.cumWater.toFixed(2)} × ${params.Bw.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.waterProduction.toFixed(4)} m³</div>
+                    </div>
+
+                    <div class="calc-formula">
+                        <div class="calc-formula-name">总累计产出</div>
+                        <div class="calc-formula-eq">Q_total = Q_og + Q_w</div>
+                        <div class="calc-formula-values">= ${r.oilGasProduction.toFixed(4)} + ${r.waterProduction.toFixed(4)}</div>
+                        <div class="calc-formula-result">= ${r.totalProduction.toFixed(4)} m³</div>
+                    </div>
+
+                    <!-- 水侵量计算 -->
+                    <div class="calc-formula" style="border-left-color: var(--success);">
+                        <div class="calc-formula-name">水侵量 We</div>
+                        <div class="calc-formula-eq">We = 总产出 - (弹性能 + 地层压缩能 + 水膨胀能 + 气弹性能 + 溶解气能 + 注水能)</div>
+                        <div class="calc-formula-values">= ${r.totalProduction.toFixed(4)} - (${r.elasticEnergy.toFixed(4)} + ${r.formationCompEnergy.toFixed(4)} + ${r.waterExpansionEnergy.toFixed(4)} + ${r.gasElasticEnergy.toFixed(4)} + ${r.dissolvedGasEnergy.toFixed(4)} + ${r.injectionEnergy.toFixed(4)})</div>
+                        <div class="calc-formula-result ${r.waterInflux < 0 ? 'negative' : ''}" style="font-size: 15px;">= ${r.waterInflux.toFixed(4)} m³</div>
+                    </div>
+
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            detailBody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
